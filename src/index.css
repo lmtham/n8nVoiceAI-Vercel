@@ -1,0 +1,222 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 142.1 76.2% 36.3%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 142.4 71.8% 29.2%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/80 dark:bg-black/80 backdrop-blur-lg rounded-2xl border border-white/20 dark:border-white/10 shadow-lg;
+  }
+  
+  .voice-button {
+    @apply relative h-14 w-14 rounded-full flex items-center justify-center transition-all duration-300 bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95;
+  }
+  
+  .voice-button-pulse::after {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-primary/20 animate-pulse;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .waveform-container {
+    @apply flex items-end h-12 gap-[2px];
+  }
+  
+  .waveform-bar {
+    @apply w-[3px] bg-primary rounded-t-sm;
+  }
+  
+  .widget-container {
+    @apply fixed bottom-6 right-6 z-50;
+  }
+  
+  .widget-button {
+    @apply h-16 w-16 rounded-full shadow-lg flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 cursor-pointer;
+  }
+  
+  .widget-panel {
+    @apply absolute bottom-0 right-0 mb-20 w-96 max-w-[calc(100vw-2rem)] overflow-hidden transition-all duration-300 ease-in-out;
+  }
+  
+  .chat-container {
+    @apply flex flex-col gap-4 p-6 h-[400px] overflow-y-auto;
+  }
+  
+  .message {
+    @apply max-w-[80%] p-4 rounded-2xl;
+  }
+  
+  .message-user {
+    @apply bg-primary/10 ml-auto rounded-tr-none;
+  }
+  
+  .message-ai {
+    @apply bg-secondary mr-auto rounded-tl-none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Transitions */
+.text-fade-in {
+  animation: textFadeIn 0.5s ease forwards;
+}
+
+@keyframes textFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Typewriter Effect */
+.typewriter-text {
+  display: inline-block;
+  overflow: hidden;
+  border-right: 2px solid;
+  white-space: nowrap;
+  animation: typing 2s steps(20, end), blink-caret 0.5s step-end infinite alternate;
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: currentColor }
+}
+
+/* Pulse animation for recording */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.2);
+  }
+}
