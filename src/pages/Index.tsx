@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Mic, Settings, Info } from 'lucide-react';
@@ -16,6 +15,7 @@ const Index = () => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [webhookMode, setWebhookMode] = useState<'standard' | 'popup'>('standard');
+  const [ttsProvider, setTtsProvider] = useState<'deepgram' | 'deepseek'>('deepgram');
   const [isConfiguring, setIsConfiguring] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptResult | null>(null);
@@ -26,7 +26,10 @@ const Index = () => {
     apiKey,
     mode: webhookMode
   });
-  const { generateSpeech, isLoading: isSpeaking } = useTTS();
+  const { generateSpeech, isLoading: isSpeaking } = useTTS({ 
+    apiKey, 
+    ttsProvider 
+  });
   
   useEffect(() => {
     // Check if webhook config is already saved in localStorage
@@ -37,6 +40,7 @@ const Index = () => {
         setWebhookUrl(config.webhookUrl || '');
         setApiKey(config.apiKey || '');
         setWebhookMode(config.mode || 'standard');
+        setTtsProvider(config.ttsProvider || 'deepgram');
       } catch (error) {
         console.error('Error parsing saved webhook config:', error);
         setIsConfiguring(true);
@@ -59,7 +63,8 @@ const Index = () => {
     const webhookConfig: N8nWebhookConfig = {
       webhookUrl,
       apiKey,
-      mode: webhookMode
+      mode: webhookMode,
+      ttsProvider
     };
     
     localStorage.setItem('n8nWebhookConfig', JSON.stringify(webhookConfig));
@@ -193,6 +198,24 @@ const Index = () => {
               </select>
               <p className="mt-1 text-xs text-muted-foreground">
                 Choose how the webhook should be displayed
+              </p>
+            </div>
+            
+            <div className="mb-4">
+              <label htmlFor="ttsProvider" className="block text-sm font-medium mb-1">
+                TTS Provider
+              </label>
+              <select
+                id="ttsProvider"
+                value={ttsProvider}
+                onChange={(e) => setTtsProvider(e.target.value as 'deepgram' | 'deepseek')}
+                className="w-full p-2 rounded-md border border-input bg-background"
+              >
+                <option value="deepgram">Deepgram</option>
+                <option value="deepseek">Deepseek</option>
+              </select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Choose the TTS provider
               </p>
             </div>
             

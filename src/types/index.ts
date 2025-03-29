@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   text: string;
@@ -19,6 +18,7 @@ export interface N8nWebhookConfig {
   webhookUrl: string;
   apiKey?: string;
   mode?: 'standard' | 'popup';
+  ttsProvider?: 'deepgram' | 'deepseek';
   initialMessages?: Message[];
   showWelcomeScreen?: boolean;
   theme?: 'light' | 'dark' | 'system';
@@ -58,6 +58,7 @@ export interface WidgetProps {
   greetingMessage?: string;
   theme?: 'light' | 'dark' | 'system';
   mode?: 'standard' | 'popup';
+  ttsProvider?: 'deepgram' | 'deepseek';
   initialMessages?: Message[];
   showWelcomeScreen?: boolean;
 }

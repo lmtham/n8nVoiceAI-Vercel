@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Mic, X, MinusCircle } from 'lucide-react';
@@ -20,7 +19,8 @@ const VoiceWidget: React.FC<WidgetProps> = ({
   greetingMessage = 'Hello! How can I assist you today?',
   theme = 'system',
   mode = 'standard',
-  initialMessages = []
+  initialMessages = [],
+  ttsProvider = 'deepgram'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -33,7 +33,7 @@ const VoiceWidget: React.FC<WidgetProps> = ({
   const lastUserSpeakTimeRef = useRef<number>(0);
   
   const { sendToN8n, isProcessing } = useN8nWebhook({ webhookUrl, apiKey, mode });
-  const { generateSpeech, stopSpeech, isLoading: isSpeaking } = useTTS({ apiKey });
+  const { generateSpeech, stopSpeech, isLoading: isSpeaking } = useTTS({ apiKey, ttsProvider });
   
   // Update the ref when processing status changes
   useEffect(() => {
