@@ -112,10 +112,32 @@
               voiceWidgetInstance.destroy();
             }
             
-            // Create new instance
+            // Get the webhook configuration from localStorage (same as main app)
+            let webhookUrl = 'https://demo-webhook.n8n.io/voice-ai'; // Default fallback
+            let apiKey = '';
+            let ttsProvider = 'deepgram';
+            
+            try {
+              const savedConfig = localStorage.getItem('n8nWebhookConfig');
+              if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                webhookUrl = config.webhookUrl || webhookUrl;
+                apiKey = config.apiKey || '';
+                ttsProvider = config.ttsProvider || 'deepgram';
+                console.log('Using saved webhook configuration');
+              } else {
+                console.log('No saved webhook configuration found, using default');
+              }
+            } catch (error) {
+              console.error('Error reading webhook config from localStorage:', error);
+            }
+            
+            // Create new instance with the same configuration as the main app
             voiceWidgetInstance = new VoiceWidget({
-              webhookUrl: 'https://demo-webhook.n8n.io/voice-ai',
+              webhookUrl: webhookUrl,
+              apiKey: apiKey,
               position: 'bottom-right',
+              ttsProvider: ttsProvider,
               greetingMessage: 'Hello! This is a demo of the Voice AI widget. How can I help you today?'
             });
             

@@ -1,10 +1,36 @@
+/**
+ * Voice Widget - Embeddable Voice AI Assistant
+ * Version 1.0.0
+ */
+
 (function() {
-  // Create a style element for the widget CSS
+  // Create widget styles
   const style = document.createElement('style');
   style.textContent = `
     .voice-widget-container {
       position: fixed;
       z-index: 9999;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    
+    .bottom-right {
+      bottom: 24px;
+      right: 24px;
+    }
+    
+    .bottom-left {
+      bottom: 24px;
+      left: 24px;
+    }
+    
+    .top-right {
+      top: 24px;
+      right: 24px;
+    }
+    
+    .top-left {
+      top: 24px;
+      left: 24px;
     }
     
     .voice-widget-button {
@@ -27,28 +53,27 @@
       transform: scale(1.05);
     }
     
-    .voice-widget-button svg {
-      width: 24px;
-      height: 24px;
-    }
-    
     .voice-widget-panel {
       position: absolute;
+      bottom: 80px;
+      right: 0;
       width: 380px;
       max-width: calc(100vw - 32px);
-      background-color: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(10px);
+      background-color: white;
       border-radius: 16px;
       overflow: hidden;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      transform: scale(0.95);
+      opacity: 0;
+      pointer-events: none;
     }
     
-    .dark .voice-widget-panel {
-      background-color: rgba(23, 23, 23, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: white;
+    .voice-widget-panel.active {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: all;
     }
     
     .voice-widget-header {
@@ -57,16 +82,14 @@
       justify-content: space-between;
       padding: 16px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    }
-    
-    .dark .voice-widget-header {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background-color: #f9f9f9;
     }
     
     .voice-widget-title {
-      font-weight: 500;
+      font-weight: 600;
       font-size: 16px;
       margin: 0;
+      color: #333;
     }
     
     .voice-widget-controls {
@@ -84,25 +107,15 @@
       justify-content: center;
       padding: 4px;
       border-radius: 4px;
-      transition: all 0.2s ease;
-    }
-    
-    .dark .voice-widget-control-button {
-      color: #aaa;
+      transition: background-color 0.2s ease;
     }
     
     .voice-widget-control-button:hover {
       background-color: rgba(0, 0, 0, 0.05);
-      color: #333;
-    }
-    
-    .dark .voice-widget-control-button:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: white;
     }
     
     .voice-widget-chat {
-      height: 320px;
+      height: 300px;
       overflow-y: auto;
       padding: 16px;
     }
@@ -118,17 +131,13 @@
     }
     
     .voice-widget-message-ai {
-      background-color: rgba(0, 0, 0, 0.05);
+      background-color: #f0f0f0;
       margin-right: auto;
       border-top-left-radius: 4px;
     }
     
-    .dark .voice-widget-message-ai {
-      background-color: rgba(255, 255, 255, 0.1);
-    }
-    
     .voice-widget-message-user {
-      background-color: rgba(0, 120, 255, 0.1);
+      background-color: #e1f5fe;
       margin-left: auto;
       border-top-right-radius: 4px;
     }
@@ -136,10 +145,7 @@
     .voice-widget-footer {
       padding: 16px;
       border-top: 1px solid rgba(0, 0, 0, 0.1);
-    }
-    
-    .dark .voice-widget-footer {
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      background-color: #f9f9f9;
     }
     
     .voice-widget-transcript {
@@ -148,10 +154,6 @@
       font-size: 14px;
       color: #666;
       font-style: italic;
-    }
-    
-    .dark .voice-widget-transcript {
-      color: #aaa;
     }
     
     .voice-widget-mic-button {
@@ -166,14 +168,12 @@
       justify-content: center;
       cursor: pointer;
       transition: all 0.2s ease;
+      font-size: 14px;
+      font-weight: 500;
     }
     
     .voice-widget-mic-button:hover {
       opacity: 0.9;
-    }
-    
-    .voice-widget-mic-button:active {
-      transform: scale(0.98);
     }
     
     .voice-widget-status {
@@ -181,10 +181,6 @@
       font-size: 12px;
       color: #666;
       margin-top: 8px;
-    }
-    
-    .dark .voice-widget-status {
-      color: #aaa;
     }
     
     .voice-widget-pulse {
@@ -203,59 +199,37 @@
       }
     }
     
-    .voice-widget-scale-in {
-      animation: scaleIn 0.3s forwards;
+    .voice-widget-visualizer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      margin-bottom: 16px;
     }
     
-    @keyframes scaleIn {
-      from {
-        opacity: 0;
-        transform: scale(0.9);
+    .voice-widget-visualizer-bar {
+      width: 4px;
+      height: 100%;
+      background-color: #8a2387;
+      margin: 0 2px;
+      border-radius: 2px;
+      animation: none;
+    }
+    
+    .voice-widget-visualizer-bar.active {
+      animation: sound 0.5s infinite alternate;
+    }
+    
+    @keyframes sound {
+      0% {
+        height: 10%;
       }
-      to {
-        opacity: 1;
-        transform: scale(1);
+      100% {
+        height: 100%;
       }
-    }
-    
-    .voice-widget-minimized {
-      height: 56px;
-      overflow: hidden;
-    }
-    
-    .bottom-right {
-      bottom: 24px;
-      right: 24px;
-    }
-    
-    .bottom-left {
-      bottom: 24px;
-      left: 24px;
-    }
-    
-    .top-right {
-      top: 24px;
-      right: 24px;
-    }
-    
-    .top-left {
-      top: 24px;
-      left: 24px;
     }
   `;
   document.head.appendChild(style);
-
-  // Load React and ReactDOM from CDN
-  const loadScript = (src) => {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  };
 
   // Main widget class
   class VoiceWidget {
@@ -266,186 +240,132 @@
         position: 'bottom-right',
         buttonLabel: 'Voice Assistant',
         greetingMessage: 'Hello! How can I assist you today?',
-        theme: 'system',
-        mode: 'standard',
-        ttsProvider: 'deepgram',
         ...config
       };
       
       this.container = null;
+      this.panel = null;
+      this.toggleButton = null;
       this.isOpen = false;
       this.isListening = false;
-      this.isMinimized = false;
       this.isSpeaking = false;
       this.isProcessing = false;
       this.messages = [];
-      this.transcript = null;
-      this.audioElement = new Audio();
+      this.transcript = '';
+      this.recognition = null;
+      this.audioContext = null;
+      this.visualizerBars = [];
       
       // Initialize the widget
       this.init();
     }
     
-    async init() {
-      try {
-        // Create container
-        this.container = document.createElement('div');
-        this.container.className = `voice-widget-container ${this.config.position}`;
-        document.body.appendChild(this.container);
-        
-        // Set up audio element
-        this.setupAudioElement();
-        
-        // Check if browser supports speech recognition
-        this.checkSpeechSupport();
-        
-        // Render the widget
-        this.render();
-        
-        // Add greeting message
-        if (this.config.greetingMessage) {
-          this.addMessage({
-            text: this.config.greetingMessage,
-            sender: 'ai',
-            timestamp: Date.now()
-          });
-          
-          // Generate speech for greeting
-          this.generateSpeech(this.config.greetingMessage);
-        }
-      } catch (error) {
-        console.error('Error initializing voice widget:', error);
-      }
-    }
-    
-    checkSpeechSupport() {
-      // Check if browser supports speech recognition
-      this.speechSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-      if (!this.speechSupported) {
-        console.warn('Speech recognition is not supported in this browser');
-      }
+    init() {
+      // Create container
+      this.container = document.createElement('div');
+      this.container.className = `voice-widget-container ${this.config.position}`;
+      document.body.appendChild(this.container);
       
-      // Check if browser supports speech synthesis
-      this.synthesisSupported = 'speechSynthesis' in window;
-      if (!this.synthesisSupported) {
-        console.warn('Speech synthesis is not supported in this browser');
-      }
-    }
-    }
-    
-    setupAudioElement() {
-      this.audioElement.autoplay = true;
-      this.audioElement.muted = false;
-      this.audioElement.crossOrigin = 'anonymous';
-      this.audioElement.preload = 'auto';
-      
-      this.audioElement.addEventListener('ended', () => {
-        console.log('Audio playback ended');
-        this.isSpeaking = false;
-        this.updateStatus();
-      });
-      
-      this.audioElement.addEventListener('error', (e) => {
-        console.error('Audio playback error:', e);
-        this.isSpeaking = false;
-        this.updateStatus();
-      });
-    }
-    
-    render() {
       // Create toggle button
-      const toggleButton = document.createElement('button');
-      toggleButton.className = 'voice-widget-button';
-      toggleButton.setAttribute('aria-label', this.config.buttonLabel);
-      toggleButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-          <line x1="12" y1="19" x2="12" y2="23"></line>
-          <line x1="8" y1="23" x2="16" y2="23"></line>
-        </svg>
-      `;
-      toggleButton.addEventListener('click', () => this.toggleWidget());
-      this.container.appendChild(toggleButton);
-      this.toggleButton = toggleButton;
+      this.toggleButton = document.createElement('button');
+      this.toggleButton.className = 'voice-widget-button';
+      this.toggleButton.setAttribute('aria-label', this.config.buttonLabel);
+      this.toggleButton.innerHTML = this.getMicrophoneIcon();
+      this.toggleButton.addEventListener('click', () => this.togglePanel());
+      this.container.appendChild(this.toggleButton);
       
-      // Create panel (initially hidden)
-      const panel = document.createElement('div');
-      panel.className = 'voice-widget-panel voice-widget-scale-in';
-      panel.style.display = 'none';
-      this.container.appendChild(panel);
-      this.panel = panel;
+      // Create panel
+      this.panel = document.createElement('div');
+      this.panel.className = 'voice-widget-panel';
+      this.container.appendChild(this.panel);
       
-      this.updatePanel();
+      // Render initial panel content
+      this.renderPanel();
+      
+      // Add greeting message
+      if (this.config.greetingMessage) {
+        this.addMessage(this.config.greetingMessage, 'ai');
+      }
+      
+      // Initialize speech recognition if supported
+      this.initSpeechRecognition();
     }
     
-    updatePanel() {
-      if (!this.panel) return;
-      
-      // Update panel content
+    getMicrophoneIcon() {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+        <line x1="12" y1="19" x2="12" y2="23"></line>
+        <line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>`;
+    }
+    
+    getCloseIcon() {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>`;
+    }
+    
+    renderPanel() {
       this.panel.innerHTML = `
         <div class="voice-widget-header">
           <h3 class="voice-widget-title">Voice Assistant</h3>
           <div class="voice-widget-controls">
-            <button class="voice-widget-control-button" aria-label="${this.isMinimized ? 'Expand' : 'Minimize'}" id="minimize-button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="8" y1="12" x2="16" y2="12"></line>
-              </svg>
-            </button>
-            <button class="voice-widget-control-button" aria-label="Close" id="close-button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+            <button class="voice-widget-control-button" id="voice-widget-close">
+              ${this.getCloseIcon()}
             </button>
           </div>
         </div>
-        ${!this.isMinimized ? `
-          <div class="voice-widget-chat" id="chat-container">
-            ${this.renderMessages()}
+        
+        <div class="voice-widget-chat" id="voice-widget-chat">
+          ${this.renderMessages()}
+        </div>
+        
+        <div class="voice-widget-footer">
+          <div class="voice-widget-visualizer" id="voice-widget-visualizer">
+            ${this.renderVisualizer()}
           </div>
-          <div class="voice-widget-footer">
-            <div class="voice-widget-transcript" id="transcript-container">
-              ${this.transcript ? this.transcript.text : ''}
-            </div>
-            <button class="voice-widget-mic-button ${this.isListening ? 'voice-widget-pulse' : ''}" id="mic-button">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-              <span style="margin-left: 8px;">${this.isListening ? 'Listening...' : 'Click to speak'}</span>
-            </button>
-            <div class="voice-widget-status" id="status-container">
-              ${this.getStatusText()}
-            </div>
+          
+          <div class="voice-widget-transcript" id="voice-widget-transcript">
+            ${this.transcript || ''}
           </div>
-        ` : ''}
+          
+          <button class="voice-widget-mic-button ${this.isListening ? 'voice-widget-pulse' : ''}" id="voice-widget-mic">
+            ${this.getMicrophoneIcon()}
+            <span style="margin-left: 8px;">${this.isListening ? 'Listening...' : 'Click to speak'}</span>
+          </button>
+          
+          <div class="voice-widget-status" id="voice-widget-status">
+            ${this.getStatusText()}
+          </div>
+        </div>
       `;
       
       // Add event listeners
-      const minimizeButton = this.panel.querySelector('#minimize-button');
-      if (minimizeButton) {
-        minimizeButton.addEventListener('click', () => this.toggleMinimize());
-      }
-      
-      const closeButton = this.panel.querySelector('#close-button');
+      const closeButton = this.panel.querySelector('#voice-widget-close');
       if (closeButton) {
-        closeButton.addEventListener('click', () => this.toggleWidget());
+        closeButton.addEventListener('click', () => this.togglePanel());
       }
       
-      const micButton = this.panel.querySelector('#mic-button');
+      const micButton = this.panel.querySelector('#voice-widget-mic');
       if (micButton) {
-        micButton.addEventListener('click', () => this.toggleListening());
+        micButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.toggleListening();
+        });
       }
       
-      // Scroll chat to bottom
-      const chatContainer = this.panel.querySelector('#chat-container');
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+      // Initialize visualizer bars
+      this.visualizerBars = Array.from(this.panel.querySelectorAll('.voice-widget-visualizer-bar'));
+    }
+    
+    renderVisualizer() {
+      let bars = '';
+      for (let i = 0; i < 10; i++) {
+        bars += `<div class="voice-widget-visualizer-bar ${this.isListening ? 'active' : ''}"></div>`;
       }
+      return bars;
     }
     
     renderMessages() {
@@ -458,78 +378,71 @@
     
     getStatusText() {
       if (this.isProcessing) return 'Processing...';
-      if (this.isSpeaking) return 'Speaking... (speak to interrupt)';
+      if (this.isSpeaking) return 'Speaking...';
       if (this.isListening) return 'Listening...';
       return 'Click the microphone to speak';
     }
     
-    toggleWidget() {
+    togglePanel() {
       this.isOpen = !this.isOpen;
       
       if (this.isOpen) {
-        // Show the panel with animation
-        this.panel.style.display = 'block';
-        this.panel.classList.add('voice-widget-scale-in');
-        this.toggleButton.style.display = 'none';
-        
-        // Add greeting message if it's the first time opening
-        if (this.messages.length === 0 && this.config.greetingMessage) {
-          this.addMessage({
-            text: this.config.greetingMessage,
-            sender: 'ai',
-            timestamp: Date.now()
-          });
-          
-          // Generate speech for greeting
-          this.generateSpeech(this.config.greetingMessage);
+        this.panel.classList.add('active');
+      } else {
+        this.panel.classList.remove('active');
+        // Stop listening if panel is closed
+        if (this.isListening) {
+          this.toggleListening();
         }
-      } else {
-        // Stop any ongoing operations when closing
-        if (this.isListening) this.toggleListening();
-        if (this.isSpeaking) this.stopSpeech();
-        
-        // Hide with animation
-        this.panel.classList.remove('voice-widget-scale-in');
-        
-        setTimeout(() => {
-          this.panel.style.display = 'none';
-          this.toggleButton.style.display = 'flex';
-        }, 300);
       }
-    }
-    
-    toggleMinimize() {
-      this.isMinimized = !this.isMinimized;
-      if (this.isMinimized) {
-        this.panel.classList.add('voice-widget-minimized');
-      } else {
-        this.panel.classList.remove('voice-widget-minimized');
-      }
-      this.updatePanel();
     }
     
     toggleListening() {
       this.isListening = !this.isListening;
       
+      // Update visualizer
+      this.visualizerBars.forEach(bar => {
+        if (this.isListening) {
+          bar.classList.add('active');
+          // Add random delay to each bar for more natural effect
+          bar.style.animationDelay = `${Math.random() * 0.5}s`;
+        } else {
+          bar.classList.remove('active');
+        }
+      });
+      
       if (this.isListening) {
-        // Start recording
-        this.startRecording();
+        // Start recognition
+        if (this.recognition) {
+          try {
+            this.recognition.start();
+            console.log('Speech recognition started');
+          } catch (error) {
+            console.error('Error starting speech recognition:', error);
+          }
+        }
       } else {
-        // Stop recording
-        this.stopRecording();
+        // Stop recognition
+        if (this.recognition) {
+          try {
+            this.recognition.stop();
+            console.log('Speech recognition stopped');
+          } catch (error) {
+            console.error('Error stopping speech recognition:', error);
+          }
+        }
       }
       
-      this.updatePanel();
+      // Re-render panel with updated state
+      this.renderPanel();
     }
     
-    startRecording() {
-      // Use the browser's Web Speech API for voice recognition
+    initSpeechRecognition() {
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         console.error('Speech recognition not supported in this browser');
         return;
       }
       
-      // Initialize speech recognition
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       this.recognition = new SpeechRecognition();
       this.recognition.continuous = true;
@@ -548,233 +461,331 @@
           }
         }
         
-        if (interimTranscript) {
-          this.transcript = {
-            text: interimTranscript,
-            isFinal: false
-          };
-          this.updatePanel();
+        // Update transcript
+        this.transcript = interimTranscript || finalTranscript;
+        const transcriptElement = this.panel.querySelector('#voice-widget-transcript');
+        if (transcriptElement) {
+          transcriptElement.textContent = this.transcript;
         }
         
+        // Process final transcript
         if (finalTranscript) {
-          this.transcript = {
-            text: finalTranscript,
-            isFinal: true
-          };
-          this.handleTranscript(this.transcript);
+          this.processUserInput(finalTranscript);
         }
       };
       
       this.recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         this.isListening = false;
-        this.updatePanel();
+        this.renderPanel();
       };
       
       this.recognition.onend = () => {
-        // Only stop listening if the user manually stopped
+        // Only restart if we're still in listening mode
         if (this.isListening) {
-          this.recognition.start();
+          try {
+            this.recognition.start();
+          } catch (error) {
+            console.error('Error restarting speech recognition:', error);
+            this.isListening = false;
+            this.renderPanel();
+          }
         }
       };
+    }
+    
+    processUserInput(text) {
+      // Add user message
+      this.addMessage(text, 'user');
       
-      try {
-        this.recognition.start();
-        console.log('Speech recognition started');
-      } catch (error) {
-        console.error('Error starting speech recognition:', error);
-        this.isListening = false;
-        this.updatePanel();
-      }
-    }
-    
-    stopRecording() {
-      if (this.recognition) {
-        this.recognition.stop();
-        console.log('Speech recognition stopped');
-      }
-    }
-    
-    async handleTranscript(transcript) {
-      this.updatePanel();
-      
-      if (transcript.isFinal && transcript.text.trim()) {
-        // If user starts speaking while AI is speaking, immediately interrupt the AI
-        if (this.isSpeaking) {
-          console.log("User interrupting AI speech");
-          this.stopSpeech();
-        }
-        
-        // Add user message
-        this.addMessage({
-          text: transcript.text,
-          sender: 'user',
-          timestamp: Date.now()
-        });
-        
-        // Add pending AI message
-        const pendingMessageId = Date.now().toString();
-        this.addMessage({
-          id: pendingMessageId,
-          text: 'Thinking...',
-          sender: 'ai',
-          timestamp: Date.now(),
-          pending: true
-        });
-        
-        try {
-          // Process with n8n webhook
-          const response = await this.sendToN8n(transcript.text);
-          
-          // Update with actual AI response
-          this.updateMessage(pendingMessageId, {
-            text: response,
-            pending: false
-          });
-          
-          // Generate speech for AI response
-          this.generateSpeech(response);
-        } catch (error) {
-          console.error('Error processing with n8n:', error);
-          
-          // Update with error message
-          this.updateMessage(pendingMessageId, {
-            text: "Sorry, I couldn't process that request.",
-            pending: false
-          });
-        }
-      }
-    }
-    
-    addMessage(message) {
-      this.messages.push({
-        id: message.id || Date.now().toString(),
-        ...message
-      });
-      this.updatePanel();
-    }
-    
-    updateMessage(id, updates) {
-      this.messages = this.messages.map(msg => 
-        msg.id === id ? { ...msg, ...updates } : msg
-      );
-      this.updatePanel();
-    }
-    
-    async sendToN8n(text) {
+      // Show processing state
       this.isProcessing = true;
-      this.updateStatus();
+      this.renderPanel();
       
-      try {
-        // Make API call to n8n webhook
-        const response = await fetch(this.config.webhookUrl, {
+      // Add AI thinking message
+      const thinkingMessage = { id: Date.now(), text: 'Thinking...', sender: 'ai', timestamp: Date.now() };
+      this.messages.push(thinkingMessage);
+      this.renderPanel();
+      this.scrollToBottom();
+      
+      // Process with webhook if provided
+      if (this.config.webhookUrl) {
+        // Create a session ID if it doesn't exist in localStorage
+        let sessionId = localStorage.getItem('n8n_session_id');
+        if (!sessionId) {
+          sessionId = 'session_' + Math.random().toString(36).substring(2, 15);
+          localStorage.setItem('n8n_session_id', sessionId);
+        }
+        
+        // Format the conversation history like the main app
+        const conversationHistory = this.messages
+          .filter(m => m !== thinkingMessage)
+          .map(msg => ({
+            content: msg.text,
+            isUser: msg.sender === 'user',
+            timestamp: new Date(msg.timestamp).toISOString()
+          }));
+        
+        // Format the payload to match the expected format by n8n
+        const payload = {
+          action: 'sendMessage',
+          sessionId: sessionId,
+          chatInput: text,
+          message: text,
+          type: 'text',
+          timestamp: new Date().toISOString(),
+          conversationHistory: conversationHistory
+        };
+        
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (this.config.apiKey) {
+          headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+        }
+        
+        console.log('Sending to n8n webhook:', this.config.webhookUrl);
+        console.log('Payload:', JSON.stringify(payload));
+        
+        fetch(this.config.webhookUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(this.config.apiKey ? { 'Authorization': `Bearer ${this.config.apiKey}` } : {})
-          },
+          headers: headers,
+          body: JSON.stringify(payload)
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Try to parse the response as JSON, but fall back to text if it's not valid JSON
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              return response.json();
+            } else {
+              return response.text().then(text => {
+                try {
+                  return JSON.parse(text);
+                } catch (e) {
+                  return text;
+                }
+              });
+            }
+          })
+          .then(data => {
+            console.log('Response from n8n:', data);
+            
+            // Extract the response text based on the data format
+            let botResponseText = '';
+            
+            if (typeof data === 'string') {
+              botResponseText = data;
+            } else if (data.output) { // n8n AI format
+              botResponseText = data.output;
+            } else if (data.message) {
+              botResponseText = data.message;
+            } else if (data.response) {
+              botResponseText = data.response;
+            } else if (data.content) {
+              botResponseText = data.content;
+            } else if (data.text) {
+              botResponseText = data.text;
+            }
+            
+            const responseText = botResponseText || "I received your message but I'm not sure how to respond.";
+            
+            // Update AI message
+            const messageIndex = this.messages.findIndex(m => m === thinkingMessage);
+            if (messageIndex !== -1) {
+              this.messages[messageIndex] = { 
+                id: thinkingMessage.id, 
+                text: responseText, 
+                sender: 'ai', 
+                timestamp: Date.now() 
+              };
+            }
+            
+            // Generate speech if TTS is configured
+            if (this.config.ttsProvider && responseText) {
+              this.generateSpeech(responseText);
+            }
+            
+            this.renderPanel();
+            this.scrollToBottom();
+          })
+          .catch(error => {
+            console.error('Error processing with webhook:', error);
+            // Update with error message
+            const messageIndex = this.messages.findIndex(m => m === thinkingMessage);
+            if (messageIndex !== -1) {
+              this.messages[messageIndex] = { 
+                id: thinkingMessage.id, 
+                text: "I'm sorry, I couldn't process that request. Please try again.", 
+                sender: 'ai', 
+                timestamp: Date.now() 
+              };
+            }
+            this.renderPanel();
+            this.scrollToBottom();
+          })
+          .finally(() => {
+            this.isProcessing = false;
+            this.renderPanel();
+          });
+      } else {
+        // Demo response if no webhook
+        setTimeout(() => {
+          const messageIndex = this.messages.findIndex(m => m === thinkingMessage);
+          if (messageIndex !== -1) {
+            this.messages[messageIndex] = { 
+              id: thinkingMessage.id, 
+              text: "This is a demo response. Please configure a webhook URL to process real requests.", 
+              sender: 'ai', 
+              timestamp: Date.now() 
+            };
+          }
+          this.isProcessing = false;
+          this.renderPanel();
+          this.scrollToBottom();
+        }, 1000);
+      }
+    }
+    
+    scrollToBottom() {
+      // Scroll chat to bottom
+      setTimeout(() => {
+        const chatContainer = this.panel.querySelector('#voice-widget-chat');
+        if (chatContainer) {
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      }, 100);
+    }
+    
+    sendToWebhook(text) {
+      return new Promise((resolve, reject) => {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (this.config.apiKey) {
+          headers['Authorization'] = `Bearer ${this.config.apiKey}`;
+        }
+        
+        // Format messages in the same way as the main application
+        const formattedMessages = this.messages.map(m => ({
+          id: m.id,
+          text: m.text,
+          sender: m.sender,
+          timestamp: m.timestamp || Date.now()
+        }));
+        
+        fetch(this.config.webhookUrl, {
+          method: 'POST',
+          headers,
           body: JSON.stringify({
             text,
-            messages: this.messages,
-            mode: this.config.mode
+            messages: formattedMessages,
+            mode: 'standard',
+            ttsProvider: this.config.ttsProvider || 'deepgram'
           })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return data.response || "I'm sorry, I couldn't generate a response.";
-      } catch (error) {
-        console.error('Error sending to n8n:', error);
-        throw error;
-      } finally {
-        this.isProcessing = false;
-        this.updateStatus();
-      }
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            // Handle the response in the same way as the main application
+            const responseText = data.response || data.text || data.message || data;
+            
+            // Generate speech if TTS is configured
+            if (this.config.ttsProvider && responseText) {
+              this.generateSpeech(responseText);
+            }
+            
+            resolve(responseText);
+          })
+          .catch(error => {
+            console.error('Error sending to webhook:', error);
+            reject(error);
+          });
+      });
     }
     
-    async generateSpeech(text) {
-      if (!text || text.trim() === '') return;
-      
-      // Stop any ongoing speech
-      this.stopSpeech();
+    generateSpeech(text) {
+      if (!text || !this.config.ttsProvider) return;
       
       this.isSpeaking = true;
-      this.updateStatus();
+      this.renderPanel();
       
-      try {
-        // Use the browser's built-in speech synthesis
-        if ('speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(text);
-          
-          // Set voice properties for better quality
-          const voices = window.speechSynthesis.getVoices();
-          if (voices.length > 0) {
-            // Try to find a good quality voice
-            const preferredVoice = voices.find(voice => 
-              voice.lang.includes('en') && voice.localService === false
-            ) || voices[0];
-            utterance.voice = preferredVoice;
-          }
-          
-          // Set other properties
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
-          
-          utterance.onend = () => {
-            this.isSpeaking = false;
-            this.updateStatus();
-          };
-          utterance.onerror = (event) => {
-            console.error('Speech synthesis error:', event);
-            this.isSpeaking = false;
-            this.updateStatus();
-          };
-          window.speechSynthesis.speak(utterance);
-        } else {
-          console.log('Speech synthesis not supported');
-          this.isSpeaking = false;
-          this.updateStatus();
-        }
-      } catch (error) {
-        console.error('Error generating speech:', error);
-        this.isSpeaking = false;
-        this.updateStatus();
-      }
-    }
-    
-    stopSpeech() {
+      // Use browser's built-in speech synthesis
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        
+        // Set voice properties
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          // Try to find a good quality voice
+          const preferredVoice = voices.find(voice => 
+            voice.lang.includes('en') && voice.localService === false
+          ) || voices[0];
+          utterance.voice = preferredVoice;
+        }
+        
+        // Set other properties
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        
+        utterance.onend = () => {
+          this.isSpeaking = false;
+          this.renderPanel();
+        };
+        
+        utterance.onerror = (event) => {
+          console.error('Speech synthesis error:', event);
+          this.isSpeaking = false;
+          this.renderPanel();
+        };
+        
+        window.speechSynthesis.speak(utterance);
+      } else {
+        console.log('Speech synthesis not supported');
+        this.isSpeaking = false;
+        this.renderPanel();
       }
-      
-      this.audioElement.pause();
-      this.audioElement.currentTime = 0;
-      
-      this.isSpeaking = false;
-      this.updateStatus();
     }
     
-    updateStatus() {
-      const statusContainer = this.panel?.querySelector('#status-container');
-      if (statusContainer) {
-        statusContainer.textContent = this.getStatusText();
-      }
+    addMessage(text, sender) {
+      this.messages.push({
+        id: Date.now(),
+        text,
+        sender,
+        timestamp: Date.now()
+      });
+      
+      this.renderPanel();
+      this.scrollToBottom();
     }
     
     destroy() {
-      // Clean up resources
+      // Stop any ongoing processes
+      if (this.recognition) {
+        try {
+          this.recognition.stop();
+        } catch (e) {
+          // Ignore errors when stopping
+        }
+      }
+      
+      // Remove container from DOM
       if (this.container && document.body.contains(this.container)) {
         document.body.removeChild(this.container);
       }
-      
-      this.stopSpeech();
     }
   }
-
+  
   // Export to window for usage in script tags
   window.VoiceWidget = VoiceWidget;
 })();
