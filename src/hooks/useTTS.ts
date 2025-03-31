@@ -64,6 +64,12 @@ const useTTS = ({ apiKey, voiceSettings = {}, ttsProvider = 'deepgram' }: UseTTS
       setError('Failed to play audio');
       setIsLoading(false);
     });
+    
+    // Set audio properties to help with autoplay
+    audioElementRef.current.autoplay = true;
+    audioElementRef.current.muted = false;
+    audioElementRef.current.crossOrigin = 'anonymous';
+    audioElementRef.current.preload = 'auto';
   }
   
   const settings: VoiceSettings = {
@@ -148,22 +154,46 @@ const useTTS = ({ apiKey, voiceSettings = {}, ttsProvider = 'deepgram' }: UseTTS
         audioElementRef.current.src = newAudioUrl;
         
         console.log('Playing audio...');
+        // Unmute the audio before playing (helps with autoplay policies)
+        audioElementRef.current.muted = false;
+        audioElementRef.current.volume = 1.0;
+        
         const playPromise = audioElementRef.current.play();
         
         // Handle play promise rejection (often happens due to user interaction requirements)
         if (playPromise !== undefined) {
           playPromise.catch(err => {
             console.error('Audio play error:', err);
-            // Try playing again after a short delay
-            setTimeout(() => {
+            // If autoplay was prevented, try with muted audio first (browsers allow muted autoplay)
+            if (err.name === 'NotAllowedError') {
+              console.log('Autoplay prevented, trying with muted audio first...');
               if (audioElementRef.current) {
-                audioElementRef.current.play().catch(e => {
-                  console.error('Second attempt to play audio failed:', e);
-                  setError('Failed to play audio: ' + e.message);
-                  setIsLoading(false);
-                });
+                audioElementRef.current.muted = true;
+                audioElementRef.current.play()
+                  .then(() => {
+                    // Unmute after successful play start
+                    setTimeout(() => {
+                      if (audioElementRef.current) audioElementRef.current.muted = false;
+                    }, 100);
+                  })
+                  .catch(e => {
+                    console.error('Even muted autoplay failed:', e);
+                    setError('Browser prevented audio playback. Please interact with the page first.');
+                    setIsLoading(false);
+                  });
               }
-            }, 100);
+            } else {
+              // For other errors, try again after a short delay
+              setTimeout(() => {
+                if (audioElementRef.current) {
+                  audioElementRef.current.play().catch(e => {
+                    console.error('Second attempt to play audio failed:', e);
+                    setError('Failed to play audio: ' + e.message);
+                    setIsLoading(false);
+                  });
+                }
+              }, 100);
+            }
           });
         }
       } else {
