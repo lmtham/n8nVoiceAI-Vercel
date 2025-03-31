@@ -344,13 +344,30 @@ const Index = () => {
                   </p>
                   
                   <div className="bg-muted p-3 rounded text-xs font-mono overflow-x-auto">
-                    {`<script src="https://your-domain.com/voicewidget.js"></script>
+                    {`<script src="${window.location.origin}/voicewidget.js"></script>
 <script>
   new VoiceWidget({
     webhookUrl: "${webhookUrl}",
     position: "bottom-right"
   });
 </script>`}
+                  </div>
+                  
+                  <div className="mt-4 flex justify-between items-center">
+                    <a 
+                      href="/embed-demo.html" 
+                      target="_blank" 
+                      className="text-sm text-primary hover:underline"
+                    >
+                      View embedding demo
+                    </a>
+                    <a 
+                      href="/voicewidget.js" 
+                      target="_blank" 
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Download widget script
+                    </a>
                   </div>
                 </div>
               </div>

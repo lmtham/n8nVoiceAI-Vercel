@@ -34,4 +34,16 @@ if (typeof window !== 'undefined') {
   (window as any).VoiceWidget = EmbeddableVoiceWidget;
 }
 
+// Helper function to create a script element that loads the widget script
+export const loadVoiceWidgetScript = (scriptUrl: string = '/voicewidget.js'): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = scriptUrl;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(new Error(`Failed to load voice widget script: ${err}`));
+    document.head.appendChild(script);
+  });
+};
+
 export default EmbeddableVoiceWidget;

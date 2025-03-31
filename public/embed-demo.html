@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice AI Widget Demo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #8a2387;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .demo-section {
+      background-color: #f9f9f9;
+      border-radius: 10px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    pre {
+      background-color: #f1f1f1;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, #8a2387, #e94057, #f27121);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: bold;
+      margin-top: 20px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <h1>Voice AI Widget Embedding Demo</h1>
+  
+  <div class="demo-section">
+    <h2>How to Embed the Voice Widget</h2>
+    <p>Add the following code to your website to embed the Voice AI assistant:</p>
+    
+    <pre><code>&lt;script src="https://your-domain.com/voicewidget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  new VoiceWidget({
+    webhookUrl: "YOUR_N8N_WEBHOOK_URL",
+    position: "bottom-right",
+    theme: "system"
+  });
+&lt;/script&gt;</code></pre>
+    
+    <h3>Configuration Options:</h3>
+    <ul>
+      <li><strong>webhookUrl</strong> (required): Your n8n webhook URL for processing voice commands</li>
+      <li><strong>apiKey</strong> (optional): API key for authentication</li>
+      <li><strong>position</strong> (optional): Widget position - "bottom-right", "bottom-left", "top-right", or "top-left"</li>
+      <li><strong>theme</strong> (optional): "light", "dark", or "system"</li>
+      <li><strong>greetingMessage</strong> (optional): Custom greeting message</li>
+      <li><strong>ttsProvider</strong> (optional): "deepgram" or "deepseek"</li>
+    </ul>
+  </div>
+  
+  <div class="demo-section">
+    <h2>Live Demo</h2>
+    <p>Click the button below to initialize the Voice AI widget on this page:</p>
+    
+    <button id="initWidget" class="btn">Initialize Voice Widget</button>
+    
+    <script>
+      document.getElementById('initWidget').addEventListener('click', function() {
+        // Load the widget script
+        const script = document.createElement('script');
+        script.src = '/voicewidget.js';
+        document.head.appendChild(script);
+        
+        // Initialize the widget when script is loaded
+        script.onload = function() {
+          new VoiceWidget({
+            webhookUrl: 'https://demo-webhook.n8n.io/voice-ai',
+            position: 'bottom-right',
+            greetingMessage: 'Hello! This is a demo of the Voice AI widget. How can I help you today?'
+          });
+          
+          // Disable the button after initialization
+          document.getElementById('initWidget').disabled = true;
+          document.getElementById('initWidget').textContent = 'Widget Initialized';
+        };
+      });
+    </script>
+  </div>
+  
+  <div class="demo-section">
+    <h2>Integration Tips</h2>
+    <ul>
+      <li>Make sure your n8n webhook is properly configured to handle voice commands</li>
+      <li>The widget works best on modern browsers that support the Web Speech API</li>
+      <li>For production use, host the widget script on a CDN for better performance</li>
+      <li>Test the widget on different devices to ensure compatibility</li>
+    </ul>
+  </div>
+</body>
+</html>
