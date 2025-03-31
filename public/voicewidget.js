@@ -296,6 +296,9 @@
         // Set up audio element
         this.setupAudioElement();
         
+        // Check if browser supports speech recognition
+        this.checkSpeechSupport();
+        
         // Render the widget
         this.render();
         
@@ -313,6 +316,21 @@
       } catch (error) {
         console.error('Error initializing voice widget:', error);
       }
+    }
+    
+    checkSpeechSupport() {
+      // Check if browser supports speech recognition
+      this.speechSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+      if (!this.speechSupported) {
+        console.warn('Speech recognition is not supported in this browser');
+      }
+      
+      // Check if browser supports speech synthesis
+      this.synthesisSupported = 'speechSynthesis' in window;
+      if (!this.synthesisSupported) {
+        console.warn('Speech synthesis is not supported in this browser');
+      }
+    }
     }
     
     setupAudioElement() {
@@ -449,12 +467,29 @@
       this.isOpen = !this.isOpen;
       
       if (this.isOpen) {
+        // Show the panel with animation
         this.panel.style.display = 'block';
+        this.panel.classList.add('voice-widget-scale-in');
         this.toggleButton.style.display = 'none';
+        
+        // Add greeting message if it's the first time opening
+        if (this.messages.length === 0 && this.config.greetingMessage) {
+          this.addMessage({
+            text: this.config.greetingMessage,
+            sender: 'ai',
+            timestamp: Date.now()
+          });
+          
+          // Generate speech for greeting
+          this.generateSpeech(this.config.greetingMessage);
+        }
       } else {
         // Stop any ongoing operations when closing
         if (this.isListening) this.toggleListening();
         if (this.isSpeaking) this.stopSpeech();
+        
+        // Hide with animation
+        this.panel.classList.remove('voice-widget-scale-in');
         
         setTimeout(() => {
           this.panel.style.display = 'none';
@@ -488,23 +523,76 @@
     }
     
     startRecording() {
-      // This is a simplified version - in a real implementation, 
-      // you would use the browser's Web Speech API or a similar library
-      console.log('Starting voice recording...');
+      // Use the browser's Web Speech API for voice recognition
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        console.error('Speech recognition not supported in this browser');
+        return;
+      }
       
-      // Simulate receiving transcript after 3 seconds
-      setTimeout(() => {
-        this.transcript = {
-          text: 'Hello, how are you today?',
-          isFinal: true
-        };
+      // Initialize speech recognition
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      
+      this.recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
         
-        this.handleTranscript(this.transcript);
-      }, 3000);
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        
+        if (interimTranscript) {
+          this.transcript = {
+            text: interimTranscript,
+            isFinal: false
+          };
+          this.updatePanel();
+        }
+        
+        if (finalTranscript) {
+          this.transcript = {
+            text: finalTranscript,
+            isFinal: true
+          };
+          this.handleTranscript(this.transcript);
+        }
+      };
+      
+      this.recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        this.isListening = false;
+        this.updatePanel();
+      };
+      
+      this.recognition.onend = () => {
+        // Only stop listening if the user manually stopped
+        if (this.isListening) {
+          this.recognition.start();
+        }
+      };
+      
+      try {
+        this.recognition.start();
+        console.log('Speech recognition started');
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+        this.isListening = false;
+        this.updatePanel();
+      }
     }
     
     stopRecording() {
-      console.log('Stopping voice recording...');
+      if (this.recognition) {
+        this.recognition.stop();
+        console.log('Speech recognition stopped');
+      }
     }
     
     async handleTranscript(transcript) {
@@ -617,10 +705,25 @@
       this.updateStatus();
       
       try {
-        // In a real implementation, you would call a TTS API here
-        // For this demo, we'll use the browser's built-in speech synthesis
+        // Use the browser's built-in speech synthesis
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(text);
+          
+          // Set voice properties for better quality
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length > 0) {
+            // Try to find a good quality voice
+            const preferredVoice = voices.find(voice => 
+              voice.lang.includes('en') && voice.localService === false
+            ) || voices[0];
+            utterance.voice = preferredVoice;
+          }
+          
+          // Set other properties
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+          
           utterance.onend = () => {
             this.isSpeaking = false;
             this.updateStatus();

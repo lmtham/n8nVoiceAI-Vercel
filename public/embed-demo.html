@@ -87,24 +87,51 @@
     <button id="initWidget" class="btn">Initialize Voice Widget</button>
     
     <script>
+      // Create a variable to track if widget is initialized
+      let widgetInitialized = false;
+      let voiceWidgetInstance = null;
+      
+      // Load the widget script when page loads
+      const script = document.createElement('script');
+      script.src = '/voicewidget.js';
+      document.head.appendChild(script);
+      
+      // Wait for script to load but don't auto-initialize
+      script.onload = function() {
+        console.log('Voice widget script loaded successfully');
+        // Don't auto-initialize, wait for button click
+      };
+      
+      // Initialize widget on button click
       document.getElementById('initWidget').addEventListener('click', function() {
-        // Load the widget script
-        const script = document.createElement('script');
-        script.src = '/voicewidget.js';
-        document.head.appendChild(script);
-        
-        // Initialize the widget when script is loaded
-        script.onload = function() {
-          new VoiceWidget({
-            webhookUrl: 'https://demo-webhook.n8n.io/voice-ai',
-            position: 'bottom-right',
-            greetingMessage: 'Hello! This is a demo of the Voice AI widget. How can I help you today?'
-          });
-          
-          // Disable the button after initialization
-          document.getElementById('initWidget').disabled = true;
-          document.getElementById('initWidget').textContent = 'Widget Initialized';
-        };
+        if (window.VoiceWidget && !widgetInitialized) {
+          console.log('Initializing voice widget...');
+          try {
+            // Destroy previous instance if it exists
+            if (voiceWidgetInstance) {
+              voiceWidgetInstance.destroy();
+            }
+            
+            // Create new instance
+            voiceWidgetInstance = new VoiceWidget({
+              webhookUrl: 'https://demo-webhook.n8n.io/voice-ai',
+              position: 'bottom-right',
+              greetingMessage: 'Hello! This is a demo of the Voice AI widget. How can I help you today?'
+            });
+            
+            // Update button and status
+            widgetInitialized = true;
+            this.disabled = true;
+            this.textContent = 'Widget Initialized';
+            console.log('Voice widget initialized successfully');
+          } catch (error) {
+            console.error('Error initializing voice widget:', error);
+            this.textContent = 'Initialization Failed';
+          }
+        } else if (!window.VoiceWidget) {
+          console.error('VoiceWidget not loaded yet');
+          this.textContent = 'Widget Not Loaded';
+        }
       });
     </script>
   </div>
