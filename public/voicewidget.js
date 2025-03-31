@@ -114,6 +114,25 @@
       background-color: rgba(0, 0, 0, 0.05);
     }
     
+    .voice-widget-reset-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-right: 8px;
+      transition: background-color 0.2s ease;
+    }
+    
+    .voice-widget-reset-button:hover {
+      background-color: #45a049;
+    }
+    
     .voice-widget-chat {
       height: 300px;
       overflow-y: auto;
@@ -233,13 +252,13 @@
 
   // Main widget class
   class VoiceWidget {
-    constructor(config) {
+    constructor(config = {}) {
       this.config = {
+        position: 'bottom-right',
         webhookUrl: '',
         apiKey: '',
-        position: 'bottom-right',
-        buttonLabel: 'Voice Assistant',
-        greetingMessage: 'Hello! How can I assist you today?',
+        ttsProvider: 'deepgram',
+        deepgramApiKey: '6915c6d15184afacb050f65c9fa22bf35b193160', // Default Deepgram API key
         ...config
       };
       
@@ -255,6 +274,8 @@
       this.recognition = null;
       this.audioContext = null;
       this.visualizerBars = [];
+      this.audioElement = null;
+      this.currentAudioUrl = null;
       
       // Initialize the widget
       this.init();
@@ -312,6 +333,12 @@
         <div class="voice-widget-header">
           <h3 class="voice-widget-title">Voice Assistant</h3>
           <div class="voice-widget-controls">
+            <button class="voice-widget-reset-button" id="voice-widget-reset" title="Reset conversation">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+            </button>
             <button class="voice-widget-control-button" id="voice-widget-close">
               ${this.getCloseIcon()}
             </button>
@@ -346,6 +373,11 @@
       const closeButton = this.panel.querySelector('#voice-widget-close');
       if (closeButton) {
         closeButton.addEventListener('click', () => this.togglePanel());
+      }
+      
+      const resetButton = this.panel.querySelector('#voice-widget-reset');
+      if (resetButton) {
+        resetButton.addEventListener('click', () => this.resetConversation());
       }
       
       const micButton = this.panel.querySelector('#voice-widget-mic');
@@ -719,23 +751,118 @@
       this.isSpeaking = true;
       this.renderPanel();
       
+      // Use Deepgram TTS API for high-quality voice
+      if (this.config.ttsProvider === 'deepgram') {
+        this.generateDeepgramSpeech(text);
+      } else if ('speechSynthesis' in window) {
+        // Fallback to browser's built-in speech synthesis
+        this.generateBrowserSpeech(text);
+      } else {
+        console.log('Speech synthesis not supported');
+        this.isSpeaking = false;
+        this.renderPanel();
+      }
+    }
+    
+    generateDeepgramSpeech(text) {
+      console.log('Generating speech with Deepgram:', text.substring(0, 50) + '...');
+      
+      // Get the API key from config
+      const apiKey = this.config.deepgramApiKey;
+      if (!apiKey) {
+        console.error('Deepgram API key is required for TTS');
+        this.isSpeaking = false;
+        this.renderPanel();
+        return;
+      }
+      
+      // Create audio element if it doesn't exist
+      if (!this.audioElement) {
+        this.audioElement = new Audio();
+        this.audioElement.addEventListener('ended', () => {
+          this.isSpeaking = false;
+          this.renderPanel();
+        });
+        this.audioElement.addEventListener('error', (e) => {
+          console.error('Audio playback error:', e);
+          this.isSpeaking = false;
+          this.renderPanel();
+        });
+      }
+      
+      // Make request to Deepgram TTS API
+      fetch('https://api.deepgram.com/v1/speak?model=aura-asteria-en', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${apiKey}`
+        },
+        body: JSON.stringify({
+          text: text
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Deepgram TTS API error: ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        // Create object URL from blob
+        const audioUrl = URL.createObjectURL(blob);
+        
+        // Clean up previous audio URL if it exists
+        if (this.currentAudioUrl) {
+          URL.revokeObjectURL(this.currentAudioUrl);
+        }
+        
+        this.currentAudioUrl = audioUrl;
+        this.audioElement.src = audioUrl;
+        
+        // Play the audio
+        const playPromise = this.audioElement.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.error('Audio play error:', err);
+            
+            // If autoplay was prevented, try with user interaction
+            if (err.name === 'NotAllowedError') {
+              console.log('Autoplay prevented. User interaction required.');
+            }
+            
+            this.isSpeaking = false;
+            this.renderPanel();
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error generating speech with Deepgram:', error);
+        this.isSpeaking = false;
+        this.renderPanel();
+      });
+    }
+    
+    generateBrowserSpeech(text) {
       // Use browser's built-in speech synthesis
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Set voice properties
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-          // Try to find a good quality voice
-          const preferredVoice = voices.find(voice => 
-            voice.lang.includes('en') && voice.localService === false
-          ) || voices[0];
-          utterance.voice = preferredVoice;
+        // Get available voices
+        let voices = window.speechSynthesis.getVoices();
+        
+        // If voices array is empty, wait for voices to load
+        if (voices.length === 0) {
+          window.speechSynthesis.onvoiceschanged = () => {
+            voices = window.speechSynthesis.getVoices();
+            this.setFemaleVoice(utterance, voices);
+          };
+        } else {
+          this.setFemaleVoice(utterance, voices);
         }
         
         // Set other properties
         utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        utterance.pitch = 1.1; // Slightly higher pitch for female voice
         utterance.volume = 1.0;
         
         utterance.onend = () => {
@@ -755,6 +882,47 @@
         this.isSpeaking = false;
         this.renderPanel();
       }
+    }
+    
+    setFemaleVoice(utterance, voices) {
+      console.log('Available voices:', voices.map(v => `${v.name} (${v.lang}) - Female: ${v.name.includes('Female') || v.name.includes('female')}`));
+      
+      // Try to find a female voice in this priority:
+      // 1. English female voice with "female" in the name
+      // 2. Any English female voice
+      // 3. Any female voice
+      // 4. Any English voice
+      // 5. First available voice
+      
+      let femaleVoice = voices.find(voice => 
+        voice.lang.includes('en') && 
+        (voice.name.includes('Female') || voice.name.includes('female'))
+      );
+      
+      if (!femaleVoice) {
+        // Try Microsoft voices which are often female but don't have "female" in the name
+        femaleVoice = voices.find(voice => 
+          voice.lang.includes('en') && 
+          (voice.name.includes('Zira') || voice.name.includes('Microsoft') || voice.name.includes('Google'))
+        );
+      }
+      
+      if (!femaleVoice) {
+        // Try any female voice
+        femaleVoice = voices.find(voice => 
+          voice.name.includes('Female') || voice.name.includes('female')
+        );
+      }
+      
+      if (!femaleVoice) {
+        // Fallback to any English voice
+        femaleVoice = voices.find(voice => voice.lang.includes('en'));
+      }
+      
+      // Final fallback to first voice
+      utterance.voice = femaleVoice || voices[0];
+      
+      console.log('Selected voice:', utterance.voice ? utterance.voice.name : 'Default voice');
     }
     
     addMessage(text, sender) {
@@ -783,6 +951,21 @@
       if (this.container && document.body.contains(this.container)) {
         document.body.removeChild(this.container);
       }
+    }
+    
+    resetConversation() {
+      // Clear messages
+      this.messages = [];
+      this.transcript = '';
+      
+      // Generate a new session ID
+      const newSessionId = 'session_' + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('n8n_session_id', newSessionId);
+      console.log('Chat session reset with new session ID:', newSessionId);
+      
+      // Update UI
+      this.renderPanel();
+      this.scrollToBottom();
     }
   }
   
