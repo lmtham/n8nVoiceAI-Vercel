@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { TranscriptResult } from '@/types';
 
@@ -12,9 +11,10 @@ declare global {
 
 interface UseVoiceRecorderProps {
   onTranscriptReceived: (transcript: TranscriptResult) => void;
+  onFinalTranscript?: () => void; // Optional callback when final transcript is received
 }
 
-const useVoiceRecorder = ({ onTranscriptReceived }: UseVoiceRecorderProps) => {
+const useVoiceRecorder = ({ onTranscriptReceived, onFinalTranscript }: UseVoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +154,11 @@ const useVoiceRecorder = ({ onTranscriptReceived }: UseVoiceRecorderProps) => {
                 text: finalTranscript,
                 isFinal: true
               });
+              
+              // Call onFinalTranscript callback if provided
+              if (onFinalTranscript) {
+                onFinalTranscript();
+              }
               
               // Reset transcript but keep recognition active
               // Don't reset finalTranscript here to avoid losing context
@@ -324,7 +329,7 @@ const useVoiceRecorder = ({ onTranscriptReceived }: UseVoiceRecorderProps) => {
       setIsRecording(false);
       resetResources(); // Clean up any partially initialized resources
     }
-  }, [isRecording, onTranscriptReceived, useSpeechRecognition, resetResources]);
+  }, [isRecording, onTranscriptReceived, useSpeechRecognition, resetResources, onFinalTranscript]);
   
   // Improved stopRecording with better resource cleanup
   const stopRecording = useCallback(() => {

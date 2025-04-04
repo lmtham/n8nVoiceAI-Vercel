@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Mic, MicOff } from 'lucide-react';
 import useVoiceRecorder from '@/hooks/useVoiceRecorder';
@@ -18,7 +17,11 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
     startRecording,
     stopRecording
   } = useVoiceRecorder({
-    onTranscriptReceived
+    onTranscriptReceived,
+    onFinalTranscript: () => {
+      // Automatically stop listening when final transcript is received
+      setIsListening(false);
+    }
   });
   
   useEffect(() => {

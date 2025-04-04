@@ -106,6 +106,17 @@ const VoiceWidget: React.FC<WidgetProps> = ({
     setIsMinimized(!isMinimized);
   };
   
+  // Handle microphone button click
+  const handleMicrophoneClick = () => {
+    // If AI is speaking, interrupt it immediately
+    if (isSpeaking) {
+      stopSpeech();
+    }
+    
+    // Toggle listening state
+    setIsListening(!isListening);
+  };
+  
   const handleTranscriptReceived = async (result: TranscriptResult) => {
     // Update last time user spoke for debouncing purposes
     lastUserSpeakTimeRef.current = Date.now();
@@ -135,6 +146,9 @@ const VoiceWidget: React.FC<WidgetProps> = ({
       
       // Stop any ongoing speech immediately
       stopSpeech();
+      
+      // Automatically stop listening once user finishes speaking
+      setIsListening(false);
       
       // Add user message
       const userMessage: Message = {
@@ -251,13 +265,19 @@ const VoiceWidget: React.FC<WidgetProps> = ({
                 <VoiceRecorder
                   onTranscriptReceived={handleTranscriptReceived}
                   isListening={isListening}
-                  setIsListening={setIsListening}
+                  setIsListening={(newListeningState) => {
+                    // If user is activating the microphone and AI is speaking, stop the speech
+                    if (newListeningState && isSpeaking) {
+                      stopSpeech();
+                    }
+                    setIsListening(newListeningState);
+                  }}
                 />
                 
                 {/* Status indicator */}
                 <div className="mt-2 text-center text-xs text-muted-foreground">
                   {isProcessing && "Processing..."}
-                  {isSpeaking && "Speaking... (speak to interrupt)"}
+                  {isSpeaking && "Speaking... (click microphone to interrupt)"}
                   {!isProcessing && !isSpeaking && isListening && "Listening..."}
                   {!isProcessing && !isSpeaking && !isListening && "Click the microphone to speak"}
                 </div>
